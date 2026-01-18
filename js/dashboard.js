@@ -140,6 +140,7 @@ async function loadKeys() {
                         <button class="action-btn" onclick="copyKey('${key.key_value}')" title="Copy">📋</button>
                         <button class="action-btn" onclick="editKey('${key.id}')" title="Edit">✏️</button>
                         <button class="action-btn" onclick="resetHWID('${key.id}')" title="Reset HWID">🔄</button>
+                        <button class="action-btn" onclick="resetUses('${key.id}')" title="Reset Uses">🔢</button>
                         <button class="action-btn danger" onclick="deleteKey('${key.id}')" title="Delete">🗑️</button>
                     </div>
                 </td>
@@ -259,6 +260,32 @@ function setupEventListeners() {
         });
     }
     
+    // Unlimited uses checkbox (single key)
+    const unlimitedCheckbox = document.getElementById('key-unlimited');
+    const maxUsesGroup = document.getElementById('max-uses-group');
+    if (unlimitedCheckbox && maxUsesGroup) {
+        unlimitedCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                maxUsesGroup.style.display = 'none';
+            } else {
+                maxUsesGroup.style.display = 'block';
+            }
+        });
+    }
+    
+    // Unlimited uses checkbox (bulk)
+    const bulkUnlimitedCheckbox = document.getElementById('bulk-unlimited');
+    const bulkMaxUsesGroup = document.getElementById('bulk-max-uses-group');
+    if (bulkUnlimitedCheckbox && bulkMaxUsesGroup) {
+        bulkUnlimitedCheckbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                bulkMaxUsesGroup.style.display = 'none';
+            } else {
+                bulkMaxUsesGroup.style.display = 'block';
+            }
+        });
+    }
+    
     // Create key form
     const createKeyForm = document.getElementById('create-key-form');
     if (createKeyForm) {
@@ -266,12 +293,13 @@ function setupEventListeners() {
             e.preventDefault();
             
             const expires = document.getElementById('key-expires').value;
-            const maxUses = document.getElementById('key-max-uses').value;
+            const unlimited = document.getElementById('key-unlimited').checked;
+            const maxUses = unlimited ? 0 : (document.getElementById('key-max-uses').value || 1);
             const note = document.getElementById('key-note')?.value || '';
             
             const result = await API.createKey({
                 expires_at: expires ? new Date(expires).toISOString() : null,
-                max_uses: parseInt(maxUses) || 1,
+                max_uses: parseInt(maxUses),
                 note: note
             });
             
@@ -302,12 +330,13 @@ function setupEventListeners() {
             
             const count = document.getElementById('bulk-count').value;
             const expires = document.getElementById('bulk-expires').value;
-            const maxUses = document.getElementById('bulk-max-uses').value;
+            const unlimited = document.getElementById('bulk-unlimited').checked;
+            const maxUses = unlimited ? 0 : (document.getElementById('bulk-max-uses').value || 1);
             
             const result = await API.bulkCreateKeys({
                 count: parseInt(count),
                 expires_at: expires ? new Date(expires).toISOString() : null,
-                max_uses: parseInt(maxUses) || 1
+                max_uses: parseInt(maxUses)
             });
             
             if (result.keys) {
@@ -395,6 +424,18 @@ async function resetHWID(id) {
             loadKeys();
         } else {
             showAlert(result.error || 'Failed to reset HWID', 'error');
+        }
+    }
+}
+
+async function resetUses(id) {
+    if (confirm('Reset uses for this key? This will set uses back to 0.')) {
+        const result = await API.resetUses(id);
+        if (result.key) {
+            showAlert('Uses reset successfully', 'success');
+            loadKeys();
+        } else {
+            showAlert(result.error || 'Failed to reset uses', 'error');
         }
     }
 }

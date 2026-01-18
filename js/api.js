@@ -103,6 +103,12 @@ const API = {
         });
     },
     
+    async resetUses(id) {
+        return this.request(`/keys/${id}/reset-uses`, {
+            method: 'POST'
+        });
+    },
+    
     // Admin
     async getStats() {
         return this.request('/admin/stats');
