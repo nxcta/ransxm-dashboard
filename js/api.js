@@ -109,6 +109,20 @@ const API = {
         });
     },
     
+    async batchDelete(ids) {
+        return this.request('/keys/batch-delete', {
+            method: 'POST',
+            body: { ids }
+        });
+    },
+    
+    async batchStatus(ids, status) {
+        return this.request('/keys/batch-status', {
+            method: 'POST',
+            body: { ids, status }
+        });
+    },
+    
     // Admin
     async getStats() {
         return this.request('/admin/stats');

@@ -3,7 +3,9 @@
 let currentPage = 1;
 let currentSearch = '';
 let currentStatus = '';
+let currentTier = '';
 let currentSection = 'dashboard';
+let selectedKeys = [];
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -84,6 +86,30 @@ async function loadStats() {
         document.getElementById('stat-total-users').textContent = result.stats.totalUsers || 0;
         document.getElementById('stat-today-validations').textContent = result.stats.todayValidations || 0;
     }
+    
+    // Tier breakdown
+    if (result.tierBreakdown) {
+        const tierBasic = document.getElementById('tier-basic');
+        const tierPremium = document.getElementById('tier-premium');
+        const tierRansxm = document.getElementById('tier-ransxm');
+        
+        if (tierBasic) tierBasic.textContent = result.tierBreakdown.basic || 0;
+        if (tierPremium) tierPremium.textContent = result.tierBreakdown.premium || 0;
+        if (tierRansxm) tierRansxm.textContent = result.tierBreakdown.ransxm || 0;
+    }
+    
+    // Status breakdown
+    if (result.statusBreakdown) {
+        const statusActive = document.getElementById('status-active');
+        const statusDisabled = document.getElementById('status-disabled');
+        const statusExpired = document.getElementById('status-expired');
+        const statusBanned = document.getElementById('status-banned');
+        
+        if (statusActive) statusActive.textContent = result.statusBreakdown.active || 0;
+        if (statusDisabled) statusDisabled.textContent = result.statusBreakdown.disabled || 0;
+        if (statusExpired) statusExpired.textContent = result.statusBreakdown.expired || 0;
+        if (statusBanned) statusBanned.textContent = result.statusBreakdown.banned || 0;
+    }
 }
 
 async function loadRecentKeys() {
@@ -118,23 +144,31 @@ async function loadKeys() {
     const container = document.getElementById('keys-table-body');
     if (!container) return;
     
-    container.innerHTML = '<tr><td colspan="7"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>';
+    container.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>';
     
-    const result = await API.getKeys({
+    const params = {
         page: currentPage,
-        search: currentSearch,
-        status: currentStatus
-    });
+        search: currentSearch
+    };
+    if (currentStatus) params.status = currentStatus;
+    if (currentTier) params.tier = currentTier;
+    
+    const result = await API.getKeys(params);
+    
+    // Reset selection
+    selectedKeys = [];
+    updateBatchActions();
     
     if (result.keys && result.keys.length > 0) {
         container.innerHTML = result.keys.map(key => `
             <tr>
+                <td><input type="checkbox" class="key-checkbox" data-id="${key.id}" onchange="updateSelection()"></td>
                 <td><span class="key-display">${key.key_value}</span></td>
                 <td><span class="badge badge-${key.status}">${key.status}</span></td>
-                <td>${key.hwid ? key.hwid.substring(0, 20) + '...' : '-'}</td>
+                <td><span class="badge badge-tier-${key.tier || 'basic'}">${(key.tier || 'basic').toUpperCase()}</span></td>
+                <td>${key.hwid ? key.hwid.substring(0, 15) + '...' : '-'}</td>
                 <td>${key.current_uses}/${key.max_uses > 0 ? key.max_uses : '∞'}</td>
                 <td>${key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never'}</td>
-                <td>${new Date(key.created_at).toLocaleDateString()}</td>
                 <td>
                     <div class="action-btns">
                         <button class="action-btn" onclick="copyKey('${key.key_value}')" title="Copy">📋</button>
@@ -158,7 +192,7 @@ async function loadKeys() {
     } else {
         container.innerHTML = `
             <tr>
-                <td colspan="7">
+                <td colspan="8">
                     <div style="text-align: center; padding: 40px; color: #888;">
                         <h3>No keys found</h3>
                         <p>Create your first key to get started</p>
@@ -240,6 +274,16 @@ function setupEventListeners() {
         });
     }
     
+    // Tier filter
+    const tierFilter = document.getElementById('tier-filter');
+    if (tierFilter) {
+        tierFilter.addEventListener('change', (e) => {
+            currentTier = e.target.value;
+            currentPage = 1;
+            loadKeys();
+        });
+    }
+    
     // Pagination
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
@@ -295,17 +339,19 @@ function setupEventListeners() {
             const expires = document.getElementById('key-expires').value;
             const unlimited = document.getElementById('key-unlimited').checked;
             const maxUses = unlimited ? 0 : (document.getElementById('key-max-uses').value || 1);
+            const tier = document.getElementById('key-tier').value;
             const note = document.getElementById('key-note')?.value || '';
             
             const result = await API.createKey({
                 expires_at: expires ? new Date(expires).toISOString() : null,
                 max_uses: parseInt(maxUses),
+                tier: tier,
                 note: note
             });
             
             if (result.key) {
                 closeModal('create-key-modal');
-                showAlert(`Key created: ${result.key.key_value}`, 'success');
+                showAlert(`Key created: ${result.key.key_value} (${tier.toUpperCase()})`, 'success');
                 
                 // Copy to clipboard
                 navigator.clipboard.writeText(result.key.key_value);
@@ -332,16 +378,18 @@ function setupEventListeners() {
             const expires = document.getElementById('bulk-expires').value;
             const unlimited = document.getElementById('bulk-unlimited').checked;
             const maxUses = unlimited ? 0 : (document.getElementById('bulk-max-uses').value || 1);
+            const tier = document.getElementById('bulk-tier').value;
             
             const result = await API.bulkCreateKeys({
                 count: parseInt(count),
                 expires_at: expires ? new Date(expires).toISOString() : null,
-                max_uses: parseInt(maxUses)
+                max_uses: parseInt(maxUses),
+                tier: tier
             });
             
             if (result.keys) {
                 closeModal('bulk-create-modal');
-                showAlert(`${result.keys.length} keys created successfully`, 'success');
+                showAlert(`${result.keys.length} ${tier.toUpperCase()} keys created`, 'success');
                 
                 // Show keys in a list
                 const keysList = result.keys.map(k => k.key_value).join('\n');
@@ -369,9 +417,10 @@ function setupEventListeners() {
             
             const id = document.getElementById('edit-key-id').value;
             const status = document.getElementById('edit-key-status').value;
+            const tier = document.getElementById('edit-key-tier').value;
             const note = document.getElementById('edit-key-note').value;
             
-            const result = await API.updateKey(id, { status, note });
+            const result = await API.updateKey(id, { status, tier, note });
             
             if (result.key) {
                 closeModal('edit-key-modal');
@@ -399,6 +448,7 @@ async function editKey(id) {
         document.getElementById('edit-key-id').value = key.id;
         document.getElementById('edit-key-value').value = key.key_value;
         document.getElementById('edit-key-status').value = key.status;
+        document.getElementById('edit-key-tier').value = key.tier || 'basic';
         document.getElementById('edit-key-note').value = key.note || '';
         openModal('edit-key-modal');
     } else {
@@ -490,4 +540,104 @@ function debounce(func, wait) {
 
 function logout() {
     Auth.logout();
+}
+
+// Selection functions
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.key-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
+    
+    updateSelection();
+}
+
+function updateSelection() {
+    const checkboxes = document.querySelectorAll('.key-checkbox:checked');
+    selectedKeys = Array.from(checkboxes).map(cb => cb.dataset.id);
+    updateBatchActions();
+}
+
+function updateBatchActions() {
+    const batchActions = document.getElementById('batch-actions');
+    const selectedCount = document.getElementById('selected-count');
+    
+    if (batchActions) {
+        if (selectedKeys.length > 0) {
+            batchActions.style.display = 'flex';
+            if (selectedCount) selectedCount.textContent = `${selectedKeys.length} selected`;
+        } else {
+            batchActions.style.display = 'none';
+        }
+    }
+}
+
+// Batch actions
+async function batchDelete() {
+    if (selectedKeys.length === 0) {
+        showAlert('No keys selected', 'error');
+        return;
+    }
+    
+    if (confirm(`Delete ${selectedKeys.length} keys? This cannot be undone.`)) {
+        const result = await API.batchDelete(selectedKeys);
+        if (!result.error) {
+            showAlert(`${selectedKeys.length} keys deleted`, 'success');
+            loadKeys();
+            loadStats();
+        } else {
+            showAlert(result.error || 'Failed to delete keys', 'error');
+        }
+    }
+}
+
+async function batchChangeStatus(status) {
+    if (selectedKeys.length === 0) {
+        showAlert('No keys selected', 'error');
+        return;
+    }
+    
+    const result = await API.batchStatus(selectedKeys, status);
+    if (!result.error) {
+        showAlert(`${selectedKeys.length} keys set to ${status}`, 'success');
+        loadKeys();
+    } else {
+        showAlert(result.error || 'Failed to update keys', 'error');
+    }
+}
+
+// Export functions
+function exportKeys(format) {
+    const params = new URLSearchParams();
+    params.append('format', format);
+    if (currentStatus) params.append('status', currentStatus);
+    if (currentTier) params.append('tier', currentTier);
+    
+    const token = API.getToken();
+    const url = `${API_BASE}/keys/export?${params.toString()}`;
+    
+    // Create a temporary link to download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ransxm-keys.${format}`;
+    
+    // Need to fetch with auth header
+    fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const downloadUrl = window.URL.createObjectURL(blob);
+        a.href = downloadUrl;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(downloadUrl);
+        showAlert(`Keys exported as ${format.toUpperCase()}`, 'success');
+    })
+    .catch(err => {
+        showAlert('Failed to export keys', 'error');
+    });
 }

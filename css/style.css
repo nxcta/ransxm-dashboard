@@ -620,6 +620,100 @@ tr:hover {
     color: var(--chrome);
 }
 
+.badge-banned {
+    background: rgba(139, 0, 0, 0.2);
+    border-color: #8b0000;
+    color: #ff4444;
+}
+
+/* Tier Badges */
+.badge-tier-basic {
+    background: rgba(128, 128, 128, 0.15);
+    border-color: #808080;
+    color: #a0a0a0;
+}
+
+.badge-tier-premium {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+    color: #ffd700;
+}
+
+.badge-tier-ransxm {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(255, 255, 255, 0.1));
+    border: 1px solid;
+    border-image: linear-gradient(135deg, #e8e8e8, #c0c0c0) 1;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== BREAKDOWN GRID ==================== */
+.breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+    .breakdown-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.breakdown-label {
+    font-size: 13px;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.breakdown-value {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--chrome);
+}
+
+.breakdown-value.success {
+    color: var(--success);
+}
+
+.breakdown-value.warning {
+    color: var(--warning);
+}
+
+.breakdown-value.danger {
+    color: var(--danger);
+}
+
+.breakdown-value.premium {
+    color: #ffd700;
+}
+
+.breakdown-value.ransxm {
+    background: var(--chrome-shine);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 /* ==================== KEY DISPLAY ==================== */
 .key-display {
     font-family: 'Consolas', 'Monaco', monospace;
