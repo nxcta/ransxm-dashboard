@@ -79,17 +79,6 @@ function setupRoleBasedUI() {
     if (userActionsHeader) userActionsHeader.style.display = isSuperAdmin ? 'block' : 'none';
     if (userActionsCol) userActionsCol.style.display = isSuperAdmin ? '' : 'none';
     
-    // Show view-only notice for admin
-    if (!isSuperAdmin) {
-        const notice = document.createElement('div');
-        notice.className = 'view-only-notice';
-        notice.innerHTML = '<span>👁️ View-Only Mode</span> — You can view data but cannot make changes';
-        notice.style.cssText = 'background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); color: #ffa500; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;';
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.insertBefore(notice, mainContent.firstChild.nextSibling);
-        }
-    }
 }
 
 function setupNavigation() {
