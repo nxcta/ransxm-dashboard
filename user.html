@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RANSXM — My License</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="gothic-bg"></div>
+    
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <h1>RANSXM</h1>
+                <span>Key Management</span>
+            </div>
+            
+            <ul class="sidebar-nav">
+                <li><a href="user.html" class="active">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    My License
+                </a></li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-initial">U</div>
+                    <div class="user-details">
+                        <div class="name" id="user-name">User</div>
+                        <div class="role" id="user-role">Member</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-sm btn-block mt-2" onclick="logout()">
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div id="alert-container"></div>
+            
+            <div class="page-header">
+                <h1 class="page-title">My License</h1>
+            </div>
+            
+            <div id="keys-container">
+                <!-- Demo key card -->
+                <div class="card">
+                    <div class="card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <span class="key-display" style="font-size: 16px; padding: 14px 20px;">RNSXM-A7K2-9X3M-P4L8</span>
+                            <span class="badge badge-active">Active</span>
+                        </div>
+                        
+                        <div class="stats-grid" style="margin-bottom: 0;">
+                            <div class="stat-card" style="padding: 20px;">
+                                <div class="label">Status</div>
+                                <div class="value" style="font-size: 20px; color: var(--success);">Active</div>
+                            </div>
+                            <div class="stat-card" style="padding: 20px;">
+                                <div class="label">Uses</div>
+                                <div class="value" style="font-size: 20px;">3 / 10</div>
+                            </div>
+                            <div class="stat-card" style="padding: 20px;">
+                                <div class="label">Expires</div>
+                                <div class="value" style="font-size: 20px;">Feb 15</div>
+                            </div>
+                            <div class="stat-card" style="padding: 20px;">
+                                <div class="label">HWID Lock</div>
+                                <div class="value" style="font-size: 20px;">Yes</div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-secondary mt-3" onclick="copyKey()">
+                            Copy Key
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = Auth.getUser();
+            if (user) {
+                document.getElementById('user-name').textContent = user.email.split('@')[0];
+                document.getElementById('user-role').textContent = 'Member';
+                document.getElementById('user-initial').textContent = user.email[0].toUpperCase();
+            }
+        });
+        
+        function copyKey() {
+            navigator.clipboard.writeText('RNSXM-A7K2-9X3M-P4L8');
+            const container = document.getElementById('alert-container');
+            container.innerHTML = '<div class="alert alert-success">Key copied to clipboard</div>';
+            setTimeout(() => container.innerHTML = '', 3000);
+        }
+        
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
