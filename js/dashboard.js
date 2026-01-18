@@ -6,6 +6,7 @@ let currentStatus = '';
 let currentTier = '';
 let currentSection = 'dashboard';
 let selectedKeys = [];
+let userRole = 'admin'; // Will be set on init
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAdmin()) return;
     
     setupUI();
+    setupRoleBasedUI();
     setupNavigation();
     await loadStats();
     await loadRecentKeys();
@@ -21,17 +23,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function setupUI() {
     const user = Auth.getUser();
+    userRole = user.role;
     
     // Set user info in sidebar
     document.getElementById('user-name').textContent = user.email.split('@')[0];
-    document.getElementById('user-role').textContent = user.role.toUpperCase();
     document.getElementById('user-initial').textContent = user.email[0].toUpperCase();
+    
+    // Format role display
+    let roleDisplay = user.role.toUpperCase().replace('_', ' ');
+    document.getElementById('user-role').textContent = roleDisplay;
     
     // Settings page
     const settingsEmail = document.getElementById('settings-email');
     const settingsRole = document.getElementById('settings-role');
     if (settingsEmail) settingsEmail.value = user.email;
-    if (settingsRole) settingsRole.value = user.role;
+    if (settingsRole) settingsRole.value = roleDisplay;
+}
+
+// Setup role-based UI visibility
+function setupRoleBasedUI() {
+    const isSuperAdmin = userRole === 'super_admin';
+    
+    // Hide/show action buttons based on role
+    const actionButtons = document.querySelectorAll('[data-role="super_admin"]');
+    actionButtons.forEach(btn => {
+        btn.style.display = isSuperAdmin ? '' : 'none';
+    });
+    
+    // Show create buttons only for super_admin
+    const dashboardHeader = document.querySelector('#section-dashboard .page-header > div');
+    if (dashboardHeader) {
+        dashboardHeader.style.display = isSuperAdmin ? 'flex' : 'none';
+    }
+    
+    const keysHeader = document.querySelector('#section-keys .page-header > div');
+    if (keysHeader) {
+        // For admin: only show export buttons, hide create buttons
+        const buttons = keysHeader.querySelectorAll('button');
+        buttons.forEach(btn => {
+            if (btn.textContent.includes('Create') || btn.textContent.includes('Generate')) {
+                btn.style.display = isSuperAdmin ? '' : 'none';
+            }
+        });
+    }
+    
+    // Show batch actions header for super_admin only
+    const batchActions = document.getElementById('batch-actions');
+    if (batchActions && !isSuperAdmin) {
+        batchActions.remove();
+    }
+    
+    // User management buttons
+    const userActionsHeader = document.getElementById('user-actions-header');
+    const userActionsCol = document.getElementById('user-actions-col');
+    if (userActionsHeader) userActionsHeader.style.display = isSuperAdmin ? 'block' : 'none';
+    if (userActionsCol) userActionsCol.style.display = isSuperAdmin ? '' : 'none';
+    
+    // Show view-only notice for admin
+    if (!isSuperAdmin) {
+        const notice = document.createElement('div');
+        notice.className = 'view-only-notice';
+        notice.innerHTML = '<span>👁️ View-Only Mode</span> — You can view data but cannot make changes';
+        notice.style.cssText = 'background: rgba(255,165,0,0.1); border: 1px solid rgba(255,165,0,0.3); color: #ffa500; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;';
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.insertBefore(notice, mainContent.firstChild.nextSibling);
+        }
+    }
 }
 
 function setupNavigation() {
@@ -159,27 +217,43 @@ async function loadKeys() {
     selectedKeys = [];
     updateBatchActions();
     
+    const isSuperAdmin = userRole === 'super_admin';
+    
     if (result.keys && result.keys.length > 0) {
-        container.innerHTML = result.keys.map(key => `
+        container.innerHTML = result.keys.map(key => {
+            // Format validation status
+            let validationBadge = '';
+            if (key.skip_validation || key.tier === 'ransxm') {
+                validationBadge = '<span class="badge badge-active" style="font-size:9px;margin-left:4px;">NO REG</span>';
+            } else if (key.validated) {
+                validationBadge = '<span class="badge badge-active" style="font-size:9px;margin-left:4px;">✓</span>';
+            } else {
+                validationBadge = '<span class="badge badge-disabled" style="font-size:9px;margin-left:4px;">PENDING</span>';
+            }
+            
+            return `
             <tr>
-                <td><input type="checkbox" class="key-checkbox" data-id="${key.id}" onchange="updateSelection()"></td>
+                ${isSuperAdmin ? `<td><input type="checkbox" class="key-checkbox" data-id="${key.id}" onchange="updateSelection()"></td>` : '<td></td>'}
                 <td><span class="key-display">${key.key_value}</span></td>
                 <td><span class="badge badge-${key.status}">${key.status}</span></td>
-                <td><span class="badge badge-tier-${key.tier || 'basic'}">${(key.tier || 'basic').toUpperCase()}</span></td>
+                <td><span class="badge badge-tier-${key.tier || 'basic'}">${(key.tier || 'basic').toUpperCase()}</span>${validationBadge}</td>
                 <td>${key.hwid ? key.hwid.substring(0, 15) + '...' : '-'}</td>
                 <td>${key.current_uses}/${key.max_uses > 0 ? key.max_uses : '∞'}</td>
                 <td>${key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Never'}</td>
                 <td>
                     <div class="action-btns">
                         <button class="action-btn" onclick="copyKey('${key.key_value}')" title="Copy">📋</button>
+                        ${isSuperAdmin ? `
                         <button class="action-btn" onclick="editKey('${key.id}')" title="Edit">✏️</button>
                         <button class="action-btn" onclick="resetHWID('${key.id}')" title="Reset HWID">🔄</button>
                         <button class="action-btn" onclick="resetUses('${key.id}')" title="Reset Uses">🔢</button>
                         <button class="action-btn danger" onclick="deleteKey('${key.id}')" title="Delete">🗑️</button>
+                        ` : ''}
                     </div>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         
         // Update pagination
         const pageInfo = document.getElementById('page-info');
@@ -195,7 +269,7 @@ async function loadKeys() {
                 <td colspan="8">
                     <div style="text-align: center; padding: 40px; color: #888;">
                         <h3>No keys found</h3>
-                        <p>Create your first key to get started</p>
+                        <p>${isSuperAdmin ? 'Create your first key to get started' : 'No keys available'}</p>
                     </div>
                 </td>
             </tr>
@@ -236,20 +310,85 @@ async function loadUsers() {
     const container = document.getElementById('users-table-body');
     if (!container) return;
     
-    container.innerHTML = '<tr><td colspan="3"><div class="loading"><div class="spinner"></div> Loading users...</div></td></tr>';
+    container.innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spinner"></div> Loading users...</div></td></tr>';
     
     const result = await API.getUsers();
+    const isSuperAdmin = userRole === 'super_admin';
+    const currentUser = Auth.getUser();
     
     if (result.users && result.users.length > 0) {
-        container.innerHTML = result.users.map(user => `
+        container.innerHTML = result.users.map(user => {
+            // Role badge styling
+            let roleBadgeClass = 'badge-disabled';
+            let roleDisplay = user.role.toUpperCase().replace('_', ' ');
+            if (user.role === 'super_admin') roleBadgeClass = 'badge-tier-ransxm';
+            else if (user.role === 'admin') roleBadgeClass = 'badge-tier-premium';
+            else roleBadgeClass = 'badge-tier-basic';
+            
+            // Key info
+            const keyDisplay = user.key ? user.key.key_value.substring(0, 15) + '...' : '-';
+            const tierDisplay = user.key ? `<span class="badge badge-tier-${user.key.tier}">${user.key.tier.toUpperCase()}</span>` : '-';
+            
+            // Actions (only for super_admin)
+            let actionsHtml = '';
+            if (isSuperAdmin && user.id !== currentUser.id) {
+                actionsHtml = `
+                    <div class="action-btns">
+                        <select class="form-control" style="width:120px;padding:4px 8px;font-size:11px;" onchange="changeUserRole('${user.id}', this.value)">
+                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="super_admin" ${user.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+                        </select>
+                        <button class="action-btn danger" onclick="deleteUser('${user.id}')" title="Delete">🗑️</button>
+                    </div>
+                `;
+            } else if (user.id === currentUser.id) {
+                actionsHtml = '<span style="color:#888;font-size:11px;">You</span>';
+            }
+            
+            return `
             <tr>
                 <td>${user.email}</td>
-                <td><span class="badge badge-${user.role === 'admin' ? 'active' : 'disabled'}">${user.role}</span></td>
+                <td><span class="badge ${roleBadgeClass}">${roleDisplay}</span></td>
+                <td>${keyDisplay}</td>
+                <td>${tierDisplay}</td>
                 <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                ${isSuperAdmin ? `<td>${actionsHtml}</td>` : ''}
             </tr>
-        `).join('');
+        `;
+        }).join('');
     } else {
-        container.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 30px; color: #888;">No users found</td></tr>';
+        container.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 30px; color: #888;">No users found</td></tr>';
+    }
+}
+
+// Change user role
+async function changeUserRole(userId, newRole) {
+    if (!confirm(`Change user role to ${newRole.toUpperCase().replace('_', ' ')}?`)) {
+        loadUsers(); // Reload to reset select
+        return;
+    }
+    
+    const result = await API.updateUserRole(userId, newRole);
+    if (result.user) {
+        showAlert('User role updated', 'success');
+        loadUsers();
+    } else {
+        showAlert(result.error || 'Failed to update role', 'error');
+        loadUsers();
+    }
+}
+
+// Delete user
+async function deleteUser(userId) {
+    if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+    
+    const result = await API.deleteUser(userId);
+    if (result.message) {
+        showAlert('User deleted', 'success');
+        loadUsers();
+    } else {
+        showAlert(result.error || 'Failed to delete user', 'error');
     }
 }
 
@@ -340,21 +479,27 @@ function setupEventListeners() {
             const unlimited = document.getElementById('key-unlimited').checked;
             const maxUses = unlimited ? 0 : (document.getElementById('key-max-uses').value || 1);
             const tier = document.getElementById('key-tier').value;
+            const skipValidation = document.getElementById('key-skip-validation')?.checked || false;
             const note = document.getElementById('key-note')?.value || '';
             
             const result = await API.createKey({
                 expires_at: expires ? new Date(expires).toISOString() : null,
                 max_uses: parseInt(maxUses),
                 tier: tier,
+                skip_validation: skipValidation,
                 note: note
             });
             
             if (result.key) {
                 closeModal('create-key-modal');
-                showAlert(`Key created: ${result.key.key_value} (${tier.toUpperCase()})`, 'success');
+                const skipText = skipValidation ? ' [GIVEAWAY]' : '';
+                showAlert(`Key created: ${result.key.key_value} (${tier.toUpperCase()})${skipText}`, 'success');
                 
                 // Copy to clipboard
                 navigator.clipboard.writeText(result.key.key_value);
+                
+                // Reset form
+                document.getElementById('key-skip-validation').checked = false;
                 
                 if (currentSection === 'dashboard') {
                     loadRecentKeys();
@@ -379,17 +524,23 @@ function setupEventListeners() {
             const unlimited = document.getElementById('bulk-unlimited').checked;
             const maxUses = unlimited ? 0 : (document.getElementById('bulk-max-uses').value || 1);
             const tier = document.getElementById('bulk-tier').value;
+            const skipValidation = document.getElementById('bulk-skip-validation')?.checked || false;
             
             const result = await API.bulkCreateKeys({
                 count: parseInt(count),
                 expires_at: expires ? new Date(expires).toISOString() : null,
                 max_uses: parseInt(maxUses),
-                tier: tier
+                tier: tier,
+                skip_validation: skipValidation
             });
             
             if (result.keys) {
                 closeModal('bulk-create-modal');
-                showAlert(`${result.keys.length} ${tier.toUpperCase()} keys created`, 'success');
+                const skipText = skipValidation ? ' [GIVEAWAY]' : '';
+                showAlert(`${result.keys.length} ${tier.toUpperCase()} keys created${skipText}`, 'success');
+                
+                // Reset form
+                document.getElementById('bulk-skip-validation').checked = false;
                 
                 // Show keys in a list
                 const keysList = result.keys.map(k => k.key_value).join('\n');
@@ -428,6 +579,29 @@ function setupEventListeners() {
                 loadKeys();
             } else {
                 showAlert(result.error || 'Failed to update', 'error');
+            }
+        });
+    }
+    
+    // Create user form (super_admin only)
+    const createUserForm = document.getElementById('create-user-form');
+    if (createUserForm) {
+        createUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+            const role = document.getElementById('new-user-role').value;
+            
+            const result = await API.createAdminUser({ email, password, role });
+            
+            if (result.user) {
+                closeModal('create-user-modal');
+                showAlert(`User ${email} created as ${role.toUpperCase().replace('_', ' ')}`, 'success');
+                createUserForm.reset();
+                loadUsers();
+            } else {
+                showAlert(result.error || 'Failed to create user', 'error');
             }
         });
     }

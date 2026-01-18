@@ -53,10 +53,10 @@ const API = {
         });
     },
     
-    async register(email, password) {
+    async register(email, password, key) {
         return this.request('/auth/register', {
             method: 'POST',
-            body: { email, password }
+            body: { email, password, key }
         });
     },
     
@@ -139,6 +139,32 @@ const API = {
     
     async getAnalytics(days = 7) {
         return this.request(`/admin/analytics?days=${days}`);
+    },
+    
+    // User Management (Super Admin only)
+    async createAdminUser(data) {
+        return this.request('/admin/users', {
+            method: 'POST',
+            body: data
+        });
+    },
+    
+    async updateUserRole(userId, role) {
+        return this.request(`/admin/users/${userId}/role`, {
+            method: 'PUT',
+            body: { role }
+        });
+    },
+    
+    async deleteUser(userId) {
+        return this.request(`/admin/users/${userId}`, {
+            method: 'DELETE'
+        });
+    },
+    
+    // User self-service
+    async getMyLogs() {
+        return this.request('/auth/my-logs');
     }
 };
 

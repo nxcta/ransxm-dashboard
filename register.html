@@ -21,13 +21,21 @@
             
             <form id="register-form">
                 <div class="form-group">
+                    <label for="key">Your Key</label>
+                    <input type="text" id="key" class="form-control" placeholder="RNSXM-XXXX-XXXX-XXXX-XXXX" required style="font-family: 'JetBrains Mono', monospace; letter-spacing: 1px;">
+                    <p style="font-size: 11px; color: #666; margin-top: 6px;">
+                        Enter the key provided by an admin to register
+                    </p>
+                </div>
+                
+                <div class="form-group">
                     <label for="email">Email Address</label>
                     <input type="email" id="email" class="form-control" placeholder="Enter your email" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" class="form-control" placeholder="Minimum 6 characters" required minlength="6">
+                    <input type="password" id="password" class="form-control" placeholder="Min 8 characters" required minlength="8">
                 </div>
                 
                 <div class="form-group">
@@ -45,6 +53,7 @@
                     Already have an account? <a href="index.html">Sign in</a>
                 </p>
             </div>
+            
         </div>
     </div>
     
@@ -53,19 +62,27 @@
     <script>
         // Check if already logged in
         if (localStorage.getItem('token')) {
-            window.location.href = 'dashboard.html';
+            Auth.redirectToDashboard();
         }
         
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const key = document.getElementById('key').value.trim().toUpperCase();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             const btn = document.getElementById('register-btn');
             
+            // Validate passwords match
             if (password !== confirmPassword) {
                 showAlert('Passwords do not match', 'error');
+                return;
+            }
+            
+            // Validate key format
+            if (!key.startsWith('RNSXM-')) {
+                showAlert('Invalid key format. Key should start with RNSXM-', 'error');
                 return;
             }
             
@@ -73,24 +90,36 @@
             btn.textContent = 'Creating account...';
             
             try {
-                const result = await Auth.register(email, password);
+                const result = await Auth.register(email, password, key);
                 if (result.success) {
-                    window.location.href = 'dashboard.html';
+                    showAlert('Account created successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        Auth.redirectToDashboard();
+                    }, 1500);
                 } else {
                     showAlert(result.error || 'Registration failed', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
                 }
             } catch (error) {
                 showAlert('Connection error', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
             }
-            
-            btn.disabled = false;
-            btn.textContent = 'Create Account';
+        });
+        
+        // Auto-format key input
+        document.getElementById('key').addEventListener('input', (e) => {
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            e.target.value = value;
         });
         
         function showAlert(message, type) {
             const container = document.getElementById('alert-container');
             container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
-            setTimeout(() => container.innerHTML = '', 5000);
+            if (type === 'error') {
+                setTimeout(() => container.innerHTML = '', 5000);
+            }
         }
     </script>
 </body>

@@ -47,9 +47,9 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // Check if already logged in
+        // Check if already logged in - redirect to appropriate dashboard
         if (localStorage.getItem('token')) {
-            window.location.href = 'dashboard.html';
+            Auth.redirectToDashboard();
         }
         
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -65,7 +65,8 @@
             try {
                 const result = await Auth.login(email, password);
                 if (result.success) {
-                    window.location.href = 'dashboard.html';
+                    // Redirect based on role
+                    Auth.redirectToDashboard();
                 } else {
                     showAlert(result.error || 'Login failed', 'error');
                 }

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RANSXM — My Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .user-dashboard {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .header-card {
+            background: linear-gradient(135deg, rgba(20, 20, 25, 0.95), rgba(30, 30, 35, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        .user-avatar-large {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #c41e3a, #8b0000);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .user-info-header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .user-info-header .tier-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        
+        .tier-badge.basic {
+            background: rgba(100, 100, 100, 0.3);
+            border: 1px solid rgba(100, 100, 100, 0.5);
+            color: #aaa;
+        }
+        
+        .tier-badge.premium {
+            background: rgba(218, 165, 32, 0.2);
+            border: 1px solid rgba(218, 165, 32, 0.5);
+            color: #daa520;
+        }
+        
+        .tier-badge.ransxm {
+            background: rgba(196, 30, 58, 0.2);
+            border: 1px solid rgba(196, 30, 58, 0.5);
+            color: #ff4d6d;
+        }
+        
+        .key-info-card {
+            background: rgba(20, 20, 25, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .key-display-large {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            letter-spacing: 2px;
+            color: #c41e3a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .copy-btn {
+            background: rgba(196, 30, 58, 0.2);
+            border: 1px solid rgba(196, 30, 58, 0.5);
+            color: #c41e3a;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background: rgba(196, 30, 58, 0.4);
+        }
+        
+        .key-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+        
+        .key-stat {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .key-stat .label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .key-stat .value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .key-stat .value.success { color: #4ade80; }
+        .key-stat .value.warning { color: #fbbf24; }
+        .key-stat .value.danger { color: #f87171; }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #c41e3a;
+            border-radius: 2px;
+        }
+        
+        .logs-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .logs-table th,
+        .logs-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .logs-table th {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .logs-table td {
+            font-size: 13px;
+            color: #ccc;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .sign-out-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .no-key-message {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .no-key-message h2 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #c41e3a;
+        }
+        
+        .no-key-message p {
+            color: #888;
+            margin-bottom: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="gothic-bg"></div>
+    
+    <button class="btn btn-secondary sign-out-btn" onclick="logout()">Sign Out</button>
+    
+    <div class="user-dashboard">
+        <div id="alert-container"></div>
+        
+        <!-- Header Card -->
+        <div class="header-card">
+            <div class="user-avatar-large" id="user-avatar">U</div>
+            <div class="user-info-header">
+                <h1 id="user-email">Loading...</h1>
+                <span class="tier-badge basic" id="user-tier">LOADING</span>
+            </div>
+        </div>
+        
+        <!-- Key Info Card -->
+        <div class="key-info-card" id="key-info-section">
+            <h3 class="section-title">Your Key</h3>
+            
+            <div class="key-display-large">
+                <span id="key-value">Loading...</span>
+                <button class="copy-btn" onclick="copyKey()">Copy</button>
+            </div>
+            
+            <div class="key-stats">
+                <div class="key-stat">
+                    <div class="label">Status</div>
+                    <div class="value success" id="key-status">Active</div>
+                </div>
+                <div class="key-stat">
+                    <div class="label">Uses</div>
+                    <div class="value" id="key-uses">0/1</div>
+                </div>
+                <div class="key-stat">
+                    <div class="label">Expires</div>
+                    <div class="value" id="key-expires">Never</div>
+                </div>
+                <div class="key-stat">
+                    <div class="label">Last Used</div>
+                    <div class="value" id="key-last-used">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- No Key Message (hidden by default) -->
+        <div class="key-info-card no-key-message" id="no-key-section" style="display: none;">
+            <h2>No Key Linked</h2>
+            <p>Your account doesn't have a key linked. Contact an admin to get a key.</p>
+        </div>
+        
+        <!-- Usage Logs -->
+        <div class="key-info-card">
+            <h3 class="section-title">Recent Activity</h3>
+            
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Game</th>
+                        <th>Executor</th>
+                        <th>Device</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-body">
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">Loading...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Account Info -->
+        <div class="key-info-card">
+            <h3 class="section-title">Account Information</h3>
+            <div class="key-stats">
+                <div class="key-stat">
+                    <div class="label">Member Since</div>
+                    <div class="value" id="member-since">-</div>
+                </div>
+                <div class="key-stat">
+                    <div class="label">HWID Status</div>
+                    <div class="value" id="hwid-status">Not Locked</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // User Dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!Auth.requireAuth()) return;
+            
+            const user = Auth.getUser();
+            
+            // If admin/super_admin, redirect to admin dashboard
+            if (user.role === 'admin' || user.role === 'super_admin') {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            await loadUserData();
+            await loadUserLogs();
+        });
+        
+        async function loadUserData() {
+            const result = await API.getMe();
+            
+            if (result.user) {
+                // User info
+                document.getElementById('user-email').textContent = result.user.email;
+                document.getElementById('user-avatar').textContent = result.user.email[0].toUpperCase();
+                document.getElementById('member-since').textContent = new Date(result.user.created_at).toLocaleDateString();
+                
+                // Key info
+                if (result.key) {
+                    document.getElementById('key-info-section').style.display = 'block';
+                    document.getElementById('no-key-section').style.display = 'none';
+                    
+                    document.getElementById('key-value').textContent = result.key.key_value;
+                    
+                    // Tier badge
+                    const tierBadge = document.getElementById('user-tier');
+                    tierBadge.textContent = result.key.tier.toUpperCase();
+                    tierBadge.className = `tier-badge ${result.key.tier}`;
+                    
+                    // Status
+                    const statusEl = document.getElementById('key-status');
+                    statusEl.textContent = result.key.status.charAt(0).toUpperCase() + result.key.status.slice(1);
+                    statusEl.className = `value ${result.key.status === 'active' ? 'success' : 'danger'}`;
+                    
+                    // Uses
+                    const uses = result.key.max_uses > 0 
+                        ? `${result.key.current_uses}/${result.key.max_uses}` 
+                        : `${result.key.current_uses}/∞`;
+                    document.getElementById('key-uses').textContent = uses;
+                    
+                    // Expires
+                    const expires = result.key.expires_at 
+                        ? new Date(result.key.expires_at).toLocaleDateString()
+                        : 'Never';
+                    document.getElementById('key-expires').textContent = expires;
+                    
+                    // Last used
+                    const lastUsed = result.key.last_used 
+                        ? new Date(result.key.last_used).toLocaleString()
+                        : 'Never';
+                    document.getElementById('key-last-used').textContent = lastUsed;
+                    
+                    // HWID
+                    document.getElementById('hwid-status').textContent = result.key.hwid 
+                        ? 'Locked' 
+                        : 'Not Locked';
+                } else {
+                    document.getElementById('key-info-section').style.display = 'none';
+                    document.getElementById('no-key-section').style.display = 'block';
+                    document.getElementById('user-tier').textContent = 'NO KEY';
+                }
+            }
+        }
+        
+        async function loadUserLogs() {
+            const result = await API.getMyLogs();
+            const container = document.getElementById('logs-body');
+            
+            if (result.logs && result.logs.length > 0) {
+                container.innerHTML = result.logs.map(log => `
+                    <tr>
+                        <td>${new Date(log.used_at).toLocaleString()}</td>
+                        <td>${log.game_id || '-'}</td>
+                        <td>${log.executor || '-'}</td>
+                        <td>${log.hwid ? log.hwid.substring(0, 15) + '...' : '-'}</td>
+                    </tr>
+                `).join('');
+            } else {
+                container.innerHTML = `
+                    <tr>
+                        <td colspan="4">
+                            <div class="empty-state">No activity yet. Use your key in a game to see logs here.</div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function copyKey() {
+            const keyValue = document.getElementById('key-value').textContent;
+            navigator.clipboard.writeText(keyValue);
+            showAlert('Key copied to clipboard', 'success');
+        }
+        
+        function showAlert(message, type = 'success') {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            setTimeout(() => alert.remove(), 3000);
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
+
